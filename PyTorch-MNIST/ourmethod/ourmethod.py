@@ -32,3 +32,7 @@ class MyCNN(nn.Module):
         # softmax层，输出预测结果
         x = func.softmax(x, dim=1)  # 注意这里将给出BATCH_SIZE*10的矩阵
         return x
+
+# from torchsummary import summary
+# model = MyCNN()
+# summary(model,(1,28,28),512)

@@ -1,19 +1,19 @@
 import math
 import torch
 import os
+import torch.nn as nn
 
 from utils import dataLoader
-from cnn import simple_net
 from ourmethod import ourmethod
+
 
 DATA_PATH = './DataSets'
 MODEL_PATH = './Models'
-# MDDEL_NAME = '/MyCNN_MNIST.pkl'
 MDDEL_NAME = '/OUR_MNIST.pkl'
 DEVICE_NUMBER = 4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu",DEVICE_NUMBER)
 BATCH_SIZE = 512
-EPOCH = 5
+EPOCH = 1
 anomalynumber = 0
 
 print('Loading train set...')
@@ -25,7 +25,6 @@ print('Using ', DEVICE)
 
 # 建立模型并载入设备
 #CNN
-# model = simple_net.MyCNN().to(DEVICE)
 model = ourmethod.MyCNN().to(DEVICE)
 # 定义损失及优化器
 cost = torch.nn.CrossEntropyLoss()
@@ -54,10 +53,11 @@ for epoch in range(EPOCH):
                 labels[i] = 1
             else:
                 labels[i] = 0
-
         images = images.to(DEVICE)  # BATCH_SIZE*28*28
         labels = labels.to(DEVICE)  # BATCH_SIZE*1
         outputs = model(images)
+        # print("labels:",labels.size())
+        # print("outputs",outputs.size())
         pred = torch.max(outputs, 1)[1]  # 这一步将给出每张图片的分类结果，BATCH_SIZE*1
         optimizer.zero_grad()
         loss = cost(outputs, labels)
@@ -73,6 +73,11 @@ for epoch in range(EPOCH):
         epoch + 1, val_loss / len(train_set), 100 * num_correct / len(train_set)))
 # 保存整个网络
 print('Saving the model...')
+print("1",model)
+model = nn.Sequential(*list(model.children())[:-4])
+print('2',model)
 if not os.path.exists(MODEL_PATH):
     os.makedirs(MODEL_PATH)
 torch.save(model, MODEL_PATH + MDDEL_NAME)
+
+

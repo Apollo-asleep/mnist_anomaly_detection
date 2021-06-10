@@ -26,9 +26,15 @@ class MyCNN(nn.Module):
         x = self.pool1(func.relu(self.Conv1(x)))
         x = self.pool2(func.relu(self.Conv2(x)))
         x = self.pool3(func.relu(self.Conv3(x)))
+        print("x1:",x.size())
         x = x.view(-1, 128 * 3 * 3)
+        print("x2:",x.size())
         x = func.relu(self.fc1(x))
         x = self.fc2(x)
         # softmax层，输出预测结果
         x = func.softmax(x, dim=1)  # 注意这里将给出BATCH_SIZE*10的矩阵
         return x
+
+# from torchsummary import summary
+# model = MyCNN()
+# summary(model,(1,28,28),512)
