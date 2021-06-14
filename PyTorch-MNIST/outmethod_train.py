@@ -2,7 +2,6 @@ import math
 import torch
 import os
 import torch.nn as nn
-
 from utils import dataLoader
 from ourmethod import ourmethod
 
@@ -10,6 +9,7 @@ from ourmethod import ourmethod
 DATA_PATH = './DataSets'
 MODEL_PATH = './Models'
 MDDEL_NAME = '/OUR_MNIST.pkl'
+# MDDEL_NAME = '/OUR_MNIST.pkl'
 DEVICE_NUMBER = 4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu",DEVICE_NUMBER)
 BATCH_SIZE = 512
@@ -25,10 +25,14 @@ print('Using ', DEVICE)
 
 # 建立模型并载入设备
 #CNN
-model = ourmethod.MyCNN().to(DEVICE)
+model = ourmethod.ourmethod().to(DEVICE)
 # 定义损失及优化器
 cost = torch.nn.CrossEntropyLoss()
+costLossFunc = torch.nn.MSELoss(reduce=True, size_average=True)
 optimizer = torch.optim.Adam(model.parameters())
+
+
+
 
 print('\n-----------------\n'
       'Num of epoch: {}\n'
@@ -48,24 +52,35 @@ for epoch in range(EPOCH):
         # 注意这里的images和labels均为一个batch的图片和标签
         #异常数字anomalynumber
         tensornum = labels.numel()
+        images_positive = torch.empty(1,28,28)
+        first_flag = True
         for i in range(tensornum):
-            if labels[i] == anomalynumber:
-                labels[i] = 1
-            else:
-                labels[i] = 0
+            if labels[i] != anomalynumber:
+                if first_flag == True:
+                    images_positive = torch.stack((images_positive,images[i]),dim = 0)
+                    first_flag = False
+                else:
+                    images_positive = torch.cat((images_positive,images[i].reshape(1,1,28,28)),dim = 0)
+        print("size",images_positive.size())
+
+
+        
+
         images = images.to(DEVICE)  # BATCH_SIZE*28*28
-        labels = labels.to(DEVICE)  # BATCH_SIZE*1
+        labels = images.to(DEVICE)  # BATCH_SIZE*1
         outputs = model(images)
-        # print("labels:",labels.size())
-        # print("outputs",outputs.size())
+        print("labels:",labels.size())
+        print("outputs",outputs.size())
         pred = torch.max(outputs, 1)[1]  # 这一步将给出每张图片的分类结果，BATCH_SIZE*1
         optimizer.zero_grad()
-        loss = cost(outputs, labels)
+        loss = costLossFunc(outputs, labels)
         loss.backward()
         optimizer.step()
         val_loss_batch += loss.data
         val_loss += val_loss_batch
-        num_correct_batch += (pred == labels).sum().item()
+
+
+        num_correct_batch += (outputs == labels).sum().item()
         num_correct += num_correct_batch
         print('Batch {}/{}, Loss: {:.6f}, Accuracy: {:.6f}%'.format(batch_idx + 1,
                                                                     BATCH_NUM, val_loss_batch / BATCH_SIZE, 100 * num_correct_batch / BATCH_SIZE))
@@ -73,11 +88,8 @@ for epoch in range(EPOCH):
         epoch + 1, val_loss / len(train_set), 100 * num_correct / len(train_set)))
 # 保存整个网络
 print('Saving the model...')
-print("1",model)
-model = nn.Sequential(*list(model.children())[:-4])
-print('2',model)
 if not os.path.exists(MODEL_PATH):
     os.makedirs(MODEL_PATH)
+model = nn.Sequential(*list(model.modules())[:-6])
+print(model)
 torch.save(model, MODEL_PATH + MDDEL_NAME)
-
-
