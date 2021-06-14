@@ -3,7 +3,7 @@ import torch
 import os
 import torch.nn as nn
 from utils import dataLoader
-from ourmethod import ourmethod
+from ourmethod import ourmethod_net
 
 
 DATA_PATH = './DataSets'
@@ -25,7 +25,15 @@ print('Using ', DEVICE)
 
 # 建立模型并载入设备
 #CNN
-model = ourmethod.ourmethod().to(DEVICE)
+# model_nodevice = ourmethod.ourmethod().to(DEVICE)
+model_nodevice = ourmethod_net.ourmethod()
+pretrained_dict = torch.load(MODEL_PATH + '/OURCNN_MNIST.pkl').state_dict()
+model_dict = model_nodevice.state_dict()
+pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+model_dict.update(pretrained_dict)
+model_nodevice.load_state_dict(model_dict)
+model = model_nodevice.to(DEVICE)
+
 # 定义损失及优化器
 cost = torch.nn.CrossEntropyLoss()
 costLossFunc = torch.nn.MSELoss(reduce=True, size_average=True)
@@ -90,6 +98,4 @@ for epoch in range(EPOCH):
 print('Saving the model...')
 if not os.path.exists(MODEL_PATH):
     os.makedirs(MODEL_PATH)
-model = nn.Sequential(*list(model.modules())[:-6])
-print(model)
 torch.save(model, MODEL_PATH + MDDEL_NAME)
