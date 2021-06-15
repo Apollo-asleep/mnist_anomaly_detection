@@ -4,6 +4,7 @@ import os
 import torch.nn as nn
 from utils import dataLoader
 from ourmethod import ourmethod_net
+from torch.nn import functional as F
 
 
 DATA_PATH = './DataSets'
@@ -13,7 +14,7 @@ MDDEL_NAME = '/OUR_MNIST.pkl'
 DEVICE_NUMBER = 4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu",DEVICE_NUMBER)
 BATCH_SIZE = 512
-EPOCH = 1
+EPOCH = 5
 anomalynumber = 0
 
 print('Loading train set...')
@@ -87,11 +88,10 @@ for epoch in range(EPOCH):
         val_loss_batch += loss.data
         val_loss += val_loss_batch
 
-
-        num_correct_batch += (outputs == labels).sum().item()
+        num_correct_batch += abs(F.cosine_similarity(outputs, labels).sum().item())/784
         num_correct += num_correct_batch
         print('Batch {}/{}, Loss: {:.6f}, Accuracy: {:.6f}%'.format(batch_idx + 1,
-                                                                    BATCH_NUM, val_loss_batch / BATCH_SIZE, 100 * num_correct_batch / BATCH_SIZE))
+                                                                    BATCH_NUM, val_loss_batch / BATCH_SIZE, (100-100 * num_correct_batch / BATCH_SIZE)))
     print('Epoch {}: Loss: {:.6f}, Accuracy: {:.6f}%\n'.format(
         epoch + 1, val_loss / len(train_set), 100 * num_correct / len(train_set)))
 # 保存整个网络
